@@ -1,0 +1,24 @@
+O que é um modelo?
+
+O que é Modelagem Computacional? Imagem
+Citar concorrência como um exemplo de problema.
+
+Aplicações: Imagens Câncer de Mama
+
+Tipos de modelos 
+
+O que é Inteligência Artificial?
+
+Por que um modelo de agentes? 
+
+Modelo baseado em agentes 
+
+	Sugarscape
+	Sistema imune 
+
+Agente inteligente 
+
+	Modelo concorrência
+
+Aplicação real análise de mercados 
+	Passagem area ou outro
