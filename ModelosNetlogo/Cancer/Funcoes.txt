@@ -1,0 +1,270 @@
+to setup-bacteria
+  let x random-pxcor
+  let y random-pycor
+  set raio-bacterias 0.5
+  create-bacterias 1 [
+    set ancora? true
+    set shape "bacteria"
+    set color yellow
+    setxy x y
+  ]
+  ask bacterias [
+    hatch numero-inicial-bacteria[
+      set color red
+      set ancora? false
+      b-anda
+    ]
+  ]
+  set raio-bacterias raio-bacterias + 0.5
+  ask bacterias [rt random-float 360.0]
+
+end
+
+to b-anda
+  if not ancora? [
+    rt random-float 360.0
+    fd random-float raio-bacterias
+  ]
+end
+
+to replicacao
+  if ancora?[
+    set color yellow
+    if (random 100 < taxa-de-replicacao AND count bacterias < 100)[
+      ask one-of bacterias with [ancora?][
+        hatch 2[
+          set color red
+          set ancora? false
+          b-anda
+        ]
+        set raio-bacterias raio-bacterias + 0.05
+      ]
+    ]
+  ]
+
+end
+
+to setup-tecido
+  ask patches[
+    set pdano 0
+    set plabel pdano
+    set pcolor pink + 3.5
+  ]
+end
+
+
+
+
+to go
+  if (one-of bacterias != nobody)[
+    ask one-of bacterias[replicacao]
+    ;ask one-of bacterias[b-dano]
+  ]
+
+  ask macrofagos[m-anda]
+  if (m-active? AND one-of macrofagos != nobody)[
+    ask bacterias[fabrica-fibrina ]
+    ask one-of macrofagos[m-migra]
+  ]
+
+  if (gravar?)[
+    vid:record-view
+  ]
+  tick
+
+end
+
+
+
+;RELACIONADO A MACROFAGO
+to setup-macrofago
+  create-macrofagos numero-inicial-macrofagos[
+    set lider? false
+    set m-active? false
+    setxy random-xcor random-ycor
+    set shape "macrofago"
+    set color blue
+  ]
+end
+
+to m-anda
+  let passo  1
+
+  ifelse (not m-active? OR (one-of bacterias = nobody))[            ;macrofagos no estado resting
+    rt random-float 360.0
+    fd passo
+    if (any? bacterias in-radius m-visao) [
+      set lider? true
+      set color green
+      set m-active? true
+    ]
+  ][                                ;macrofagos ativos
+    ifelse (any? bacterias in-radius m-visao OR lider?) [
+      set lider? true
+      set color green
+      face min-one-of bacterias [distance myself]
+      ifelse (any? bacterias-on patch-ahead passo OR any? fibrina-on patch-ahead passo)[
+          if (fagocita patch-ahead passo)[
+            fd passo
+          ]
+      ][
+        fd passo
+      ]
+
+    ][
+      let lideres-proximos other macrofagos with [lider? AND distance myself < m-visao]
+      ifelse (any? lideres-proximos) [                                                 ;se tem um lider proximo ele o segue
+        face min-one-of lideres-proximos [distance myself] ;; then face the one closest to myself
+        ifelse (any? bacterias-on patch-ahead passo OR any? fibrina-on patch-ahead passo)[
+          if (fagocita patch-ahead passo)[
+            fd passo
+          ]
+        ][
+          fd passo
+        ]
+      ][
+        rt random-float 360.0
+        ifelse (any? bacterias-on patch-ahead passo OR any? fibrina-on patch-ahead passo)[
+          if (fagocita patch-ahead passo)[
+            fd passo
+          ]
+        ][
+          fd passo
+        ]
+
+      ]
+    ]
+  ]
+end
+
+to m-migra
+  if (random 100 < taxa-m-mig)[
+    hatch 1 [
+      set lider? false
+      rt random 360.0
+      setxy random-xcor random-ycor
+      set shape "macrofago"
+      set color blue
+    ]
+  ]
+end
+
+to-report fagocita[inimigo ]
+  if (random 100 < taxa-m-fag)[
+    ask turtles-on inimigo [die]
+    report true
+  ]
+  report false
+
+end
+
+;RELACIONADO A BACTERIA
+to setup-bacteria
+  let x random-pxcor
+  let y random-pycor
+  set raio-bacterias 0.5
+  create-bacterias 1 [
+    set ancora? true
+    set shape "bacteria"
+    set color yellow
+    setxy x y
+  ]
+  ask bacterias [
+    hatch numero-inicial-bacteria[
+      set color red
+      set ancora? false
+      b-anda
+    ]
+  ]
+  set raio-bacterias raio-bacterias + 0.5
+  ask bacterias [rt random-float 360.0]
+
+end
+
+
+to replicacao
+  if ancora?[
+    set color yellow
+    if (random 100 < taxa-de-replicacao AND count bacterias < 100)[
+      ask one-of bacterias with [ancora?][
+        hatch 2[
+          set color red
+          set ancora? false
+          b-anda
+        ]
+        set raio-bacterias raio-bacterias + 0.05
+      ]
+    ]
+  ]
+
+end
+
+to b-anda
+  if not ancora? [
+    rt random-float 360.0
+    fd random-float raio-bacterias
+  ]
+end
+
+to b-dano
+  if (random 100 < taxa-dano)[
+      set pdano pdano + 1
+     ; set pcolor pcolor - pdano
+      set pcolor scale-color (pink) (pdano / 10) 5 0
+      set plabel pdano
+     ; if (pcolor <= pink AND pcolor >= pink + 5)
+     ; [set pcolor red]
+  ]
+end
+
+to fabrica-fibrina
+;;  ask neighbors[sprout 1 [set shape "x"]]
+  if (random 100 < 20)[
+    ask patches in-radius 1.4[
+      sprout-fibrina 1 [
+        set shape "x" set color lime - 2
+      ]
+    ]
+    liga
+  ]
+  ask fibrina[                              ;;gambiarra pra tirar a fibrina que ficou em cima das bacterias
+    if any? bacterias-here[
+      die
+    ]
+    if any? macrofagos-here[
+      ask macrofagos-here[die]
+    ]
+  ]
+
+end
+
+to liga
+  if (one-of fibrina != nobody)[
+    ask fibrina[if (count my-links > 2) [ask one-of my-links [die]]]
+    ask fibrina[
+      let proximos min-n-of 2 other fibrina[distance myself]
+      if (count my-links < 2)[
+        if (disponivel proximos)[
+          create-links-with proximos
+        ]
+      ]
+    ]
+  ]
+end
+
+to-report disponivel [proximos]
+  let disp true
+  ask proximos[ifelse (count my-links > 2) [set disp false][set disp true]]
+  report disp
+end
+
+
+;RELACIONADO A TECIDO
+
+to setup-tecido
+  ask patches[
+    set pdano 0
+    set plabel pdano
+    set pcolor pink + 3.5
+  ]
+end
